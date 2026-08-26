@@ -17,6 +17,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 # Pinned versions make the course setup reproducible.
 FetchContent_Declare(
@@ -26,6 +27,14 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(glfw)
+
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.3
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(glm)
 
 add_library(glad STATIC
     external/glad/src/gl.c
@@ -44,6 +53,7 @@ target_link_libraries(shader_course
     PRIVATE
         glfw
         glad
+        glm::glm-header-only
 )
 
 if(MSVC)

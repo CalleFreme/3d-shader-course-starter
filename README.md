@@ -15,12 +15,14 @@ The goal is not to hide the graphics pipeline behind a large framework. The goal
 - uploading vertex data to the GPU;
 - describing vertex attributes;
 - compiling and linking GLSL shaders from separate files;
+- creating model, view and perspective projection matrices with GLM;
+- uploading matrix uniforms from C++ to a vertex shader;
 - passing data from the vertex shader to the fragment shader;
 - interpolating vertex data across a triangle;
 - issuing a draw call;
 - displaying the resulting fragments in the framebuffer.
 
-It deliberately does **not** yet contain cameras, models, textures, lighting, scene graphs, UI, framebuffers or other higher-level systems.
+It deliberately does **not** yet contain camera controls, model loading, textures, lighting, scene graphs, UI, framebuffers or other higher-level systems.
 
 Those concepts will be introduced when they become relevant during the course.
 
@@ -42,13 +44,14 @@ Primary classroom support is provided for:
 The project uses:
 
 - **GLFW 3.4** for window creation, input and the OpenGL context;
-- **GLAD** for loading OpenGL functions.
+- **GLAD** for loading OpenGL functions;
+- **GLM 1.0.3** for vectors and transformation matrices.
 
 GLAD is already included in this repository.
 
-GLFW is downloaded automatically by CMake the first time the project is configured.
+GLFW and GLM are downloaded automatically by CMake the first time the project is configured.
 
-You do **not** need to manually download/build GLFW or generate GLAD.
+You do **not** need to manually download/build GLFW or GLM, or generate GLAD.
 
 Other IDEs, operating systems and build systems are welcome, but you may need to handle environment-specific setup and troubleshooting yourself.
 
@@ -128,11 +131,11 @@ Then build:
 cmake --build build --config Debug
 ```
 
-The first configure downloads the pinned GLFW source from GitHub.
+The first configure downloads the pinned GLFW and GLM sources from GitHub.
 
 An internet connection is therefore required the first time the project is configured.
 
-After the first successful configure, GLFW remains inside the local `build` directory until that directory is removed.
+After the first successful configure, GLFW and GLM remain inside the local `build` directory until that directory is removed.
 
 ---
 
@@ -226,6 +229,7 @@ At this stage it handles things such as:
 - uploading that data to the GPU;
 - configuring vertex attributes;
 - loading/compiling shaders;
+- creating and uploading model, view and projection matrices;
 - issuing the draw call;
 - running the application loop.
 
@@ -335,9 +339,9 @@ After installing or changing Visual Studio components, close and reopen your ter
 
 If needed, remove the old build directory and reconfigure.
 
-### CMake cannot download GLFW
+### CMake cannot download GLFW or GLM
 
-The first configure requires access to GitHub because GLFW is downloaded automatically.
+The first configure requires access to GitHub because GLFW and GLM are downloaded automatically.
 
 Check:
 
@@ -568,6 +572,7 @@ Students may use other environments for their individual project when appropriat
 The course starter currently uses:
 
 - **GLFW 3.4**
+- **GLM 1.0.3**
 - **vendored GLAD 2-generated OpenGL loader**
 - **OpenGL 3.3 Core**
 - **GLSL 330**
@@ -575,6 +580,8 @@ The course starter currently uses:
 - **CMake 3.24+**
 
 GLFW is pinned by `CMakeLists.txt`.
+
+GLM is also pinned by `CMakeLists.txt` and used as a header-only dependency.
 
 The GLAD-generated source files are included directly in the repository so students do not need Python or a GLAD generator.
 

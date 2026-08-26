@@ -1,6 +1,10 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -221,14 +225,77 @@ int main()
         return 1;
     }
 
+    // Uniform locations identify the three matrix inputs in the vertex shader.
+    // We ask for them once after linking, then use the locations when sending
+    // matrix values from the CPU to the GPU before drawing.
+    const GLint modelLocation = glGetUniformLocation(shaderProgram, "model");
+    const GLint viewLocation = glGetUniformLocation(shaderProgram, "view");
+    const GLint projectionLocation = glGetUniformLocation(shaderProgram, "projection");
+
+    if (modelLocation == -1 ||
+        viewLocation == -1 ||
+        projectionLocation == -1)
+    {
+        std::cerr
+            << "Note: one or more matrix uniforms are inactive. "
+            << "This is expected if the current shader experiment does not use them.\n";
+    }
+
+    // glm::mat4(1.0f) creates an identity matrix: it leaves a vertex unchanged.
+    // This is a conservative starting model transform. What translation,
+    // rotation, or scale would you apply here to move the triangle in its world?
+    const glm::mat4 model(1.0f);
+
+    // The view matrix converts world-space positions into view space. Moving the
+    // world by -2 on Z places the triangle in front of the conventional OpenGL
+    // viewer without introducing a camera class or camera controls.
+    const glm::mat4 view =
+        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+
+    // These values define the perspective viewing volume. Keeping them named and
+    // visible makes it easy to ask: what changes when the field of view narrows,
+    // or when the near and far clipping planes move?
+    const float fieldOfView = glm::radians(45.0f);
+    const float nearPlane = 0.1f;
+    const float farPlane = 100.0f;
+
     while (glfwWindowShouldClose(window) == GLFW_FALSE)
     {
         processInput(window);
+
+        // Framebuffer dimensions can differ from window dimensions on high-DPI
+        // displays. Reading the current framebuffer size keeps projected shapes
+        // in the correct proportions after a resize. A minimized window may have
+        // no drawable area, so wait for events instead of dividing by zero.
+        int framebufferWidth = 0;
+        int framebufferHeight = 0;
+        glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+
+        if (framebufferWidth == 0 || framebufferHeight == 0)
+        {
+            glfwPollEvents();
+            continue;
+        }
+
+        const float aspectRatio =
+            static_cast<float>(framebufferWidth) /
+            static_cast<float>(framebufferHeight);
+        const glm::mat4 projection =
+            glm::perspective(fieldOfView, aspectRatio, nearPlane, farPlane);
 
         glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
+
+        // glm::value_ptr exposes each GLM matrix as contiguous float data.
+        // GL_FALSE means OpenGL should use the conventional GLM/OpenGL matrix
+        // layout directly, without transposing it during the upload.
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(
+            projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
