@@ -231,6 +231,7 @@ int main()
     const GLint modelLocation = glGetUniformLocation(shaderProgram, "model");
     const GLint viewLocation = glGetUniformLocation(shaderProgram, "view");
     const GLint projectionLocation = glGetUniformLocation(shaderProgram, "projection");
+    const GLint timeLocation = glGetUniformLocation(shaderProgram, "time");
 
     if (modelLocation == -1 ||
         viewLocation == -1 ||
@@ -239,6 +240,13 @@ int main()
         std::cerr
             << "Note: one or more matrix uniforms are inactive. "
             << "This is expected if the current shader experiment does not use them.\n";
+    }
+
+    if (timeLocation == -1)
+    {
+        std::cerr
+            << "Note: the time uniform is inactive. "
+            << "This is expected if the current shader experiment does not use it.\n";
     }
 
     // glm::mat4(1.0f) creates an identity matrix: it leaves a vertex unchanged.
@@ -295,6 +303,7 @@ int main()
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(
             projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform1f(timeLocation, static_cast<float>(glfwGetTime()));
 
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);

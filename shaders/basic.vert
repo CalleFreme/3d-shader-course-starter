@@ -16,6 +16,7 @@ uniform mat4 view;
 uniform mat4 projection;
 
 out vec3 vertexColor; // Output variable to pass the vertex color to the fragment shader.
+out vec2 localCoord; // Local/object-space XY coordinate for fragment shader experiments.
 
 void main()
 {
@@ -28,4 +29,5 @@ void main()
     // Which matrix would you change to move the object without moving the viewer?
     // Which one controls perspective and the visible clipping range?
     vertexColor = aColor;
+    localCoord = aPosition.xy;
 }
