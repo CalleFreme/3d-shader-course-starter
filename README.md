@@ -2,7 +2,7 @@
 
 Minimal course starter for learning the real-time rasterization pipeline with C++, OpenGL and GLSL.
 
-The project intentionally starts small: one window, one triangle, one vertex shader and one fragment shader. We will extend it gradually during the course.
+The project started small and now renders one lit cube using one vertex shader and one fragment shader. It is extended gradually as each course concept becomes relevant.
 
 The goal is not to hide the graphics pipeline behind a large framework. The goal is to make the important data flow and rendering steps visible and understandable.
 
@@ -18,11 +18,13 @@ The goal is not to hide the graphics pipeline behind a large framework. The goal
 - creating model, view and perspective projection matrices with GLM;
 - uploading matrix uniforms from C++ to a vertex shader;
 - passing data from the vertex shader to the fragment shader;
-- interpolating vertex data across a triangle;
+- transforming and interpolating surface normals and world-space positions;
+- calculating simple ambient, Lambert diffuse and Blinn-Phong specular lighting;
+- using depth testing for solid 3D geometry;
 - issuing a draw call;
 - displaying the resulting fragments in the framebuffer.
 
-It deliberately does **not** yet contain camera controls, model loading, textures, lighting, scene graphs, UI, framebuffers or other higher-level systems.
+It deliberately does **not** yet contain camera controls, model loading, textures, multiple light systems, scene graphs, UI, framebuffers or other higher-level systems.
 
 Those concepts will be introduced when they become relevant during the course.
 
@@ -157,8 +159,8 @@ Expected result:
 
 - a window titled **3D and Shader Programming**;
 - a dark background;
-- one triangle;
-- smoothly interpolated red, green and blue vertex colours.
+- one static blue cube with several visible faces;
+- ambient and diffuse lighting with a restrained specular highlight.
 
 The terminal should also print information similar to:
 
@@ -225,11 +227,12 @@ At this stage it handles things such as:
 
 - creating the window;
 - initializing OpenGL;
-- defining triangle vertex data;
+- defining cube position and normal data;
 - uploading that data to the GPU;
 - configuring vertex attributes;
 - loading/compiling shaders;
-- creating and uploading model, view and projection matrices;
+- creating and uploading model, view, projection and normal matrices;
+- uploading explicit light, viewer and material uniforms;
 - issuing the draw call;
 - running the application loop.
 
@@ -243,7 +246,7 @@ The vertex shader.
 
 It receives data for each vertex and produces the final vertex position used by the graphics pipeline.
 
-It also passes colour data forward to the next stages.
+It also passes world-space position and normal data forward to the fragment shader.
 
 ### `shaders/basic.frag`
 
@@ -292,6 +295,25 @@ The first exercises introduce:
 - simple GLSL mathematics;
 - shader compiler debugging;
 - an optional animated uniform.
+
+Earlier lecture exercise documents describe the repository checkpoints used for
+those classes. The current common baseline has progressed beyond the original
+RGB triangle.
+
+## Lecture 4
+
+For the current normals, lighting, and materials baseline, continue with:
+
+`exercises/lecture-04/README.md`
+
+The exercises focus on:
+
+- surface normals and normalization;
+- coordinate-space consistency;
+- visualizing normals and `N dot L`;
+- Lambert diffuse and a small ambient term;
+- viewer direction and Blinn-Phong specular lighting;
+- debugging one intermediate lighting value at a time.
 
 Try to predict the result of each shader change before running it.
 

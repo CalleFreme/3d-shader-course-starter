@@ -11,23 +11,23 @@
 #include <string>
 
 // This is our main file for the OpenGL application.
-// It sets up a window, compiles shaders, and renders a simple triangle.
+// It sets up a window, compiles shaders, and renders a lit cube.
 // 
 // What work will be done in this file:
 // 1. Initialize GLFW and create a window.
 // 2. Load OpenGL functions using GLAD.
 // 3. Compile vertex and fragment shaders from external files.
-// 4. Set up vertex data and buffers for a triangle.
-// 5. Render the triangle in a loop until the window is closed.
+// 4. Set up vertex data and buffers for a cube.
+// 5. Render the cube in a loop until the window is closed.
 // 
 // What work will be done in other files:
 // 1. The shaders will be stored in separate files (basic.vert and basic.frag
 //    in the shaders directory).
 // 2. The shaders will be compiled and linked into a shader program.
-// 3. The shader program will be used to render the triangle.
+// 3. The shader program will be used to render the cube.
 // 4. The vertex data will be stored in a vertex buffer object (VBO) and a
 //    vertex array object (VAO).
-// 5. The triangle will be rendered using glDrawArrays with the shader program
+// 5. The cube will be rendered using glDrawArrays with the shader program
 //	and the vertex data.
 // 6. The application will handle window resizing and input events.
 // 7. The application will clean up resources and terminate GLFW on exit.
@@ -178,11 +178,58 @@ int main()
     std::cout << "OpenGL: " << glGetString(GL_VERSION) << '\n';
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
 
-    // position.xyz, color.rgb
+    glEnable(GL_DEPTH_TEST);
+
+    // position.xyz, normal.xyz
+    // Each face has its own vertices so it can have one clear, flat normal.
     constexpr float vertices[] = {
-         0.0f,  0.65f, 0.0f,   1.0f, 0.25f, 0.20f,
-        -0.65f, -0.55f, 0.0f,   0.20f, 0.90f, 0.35f,
-         0.65f, -0.55f, 0.0f,   0.20f, 0.45f, 1.00f
+        // Front (+Z)
+        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+
+        // Back (-Z)
+         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+
+        // Left (-X)
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+
+        // Right (+X)
+         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+
+        // Top (+Y)
+        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+
+        // Bottom (-Y)
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f
     };
 
     GLuint vao = 0;
@@ -231,6 +278,14 @@ int main()
     const GLint modelLocation = glGetUniformLocation(shaderProgram, "model");
     const GLint viewLocation = glGetUniformLocation(shaderProgram, "view");
     const GLint projectionLocation = glGetUniformLocation(shaderProgram, "projection");
+    const GLint normalMatrixLocation = glGetUniformLocation(shaderProgram, "normalMatrix");
+    const GLint lightDirectionLocation = glGetUniformLocation(shaderProgram, "lightDirection");
+    const GLint lightColorLocation = glGetUniformLocation(shaderProgram, "lightColor");
+    const GLint viewPositionLocation = glGetUniformLocation(shaderProgram, "viewPosition");
+    const GLint baseColorLocation = glGetUniformLocation(shaderProgram, "baseColor");
+    const GLint ambientStrengthLocation = glGetUniformLocation(shaderProgram, "ambientStrength");
+    const GLint specularStrengthLocation = glGetUniformLocation(shaderProgram, "specularStrength");
+    const GLint shininessLocation = glGetUniformLocation(shaderProgram, "shininess");
     const GLint timeLocation = glGetUniformLocation(shaderProgram, "time");
 
     if (modelLocation == -1 ||
@@ -249,16 +304,33 @@ int main()
             << "This is expected if the current shader experiment does not use it.\n";
     }
 
-    // glm::mat4(1.0f) creates an identity matrix: it leaves a vertex unchanged.
-    // This is a conservative starting model transform. What translation,
-    // rotation, or scale would you apply here to move the triangle in its world?
-    const glm::mat4 model(1.0f);
+    // A fixed rotation exposes several faces while keeping the known-good image
+    // stable and easy to compare between runs.
+    glm::mat4 model(1.0f);
+    model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    // Positions and normals transform differently. The inverse-transpose keeps
+    // normals perpendicular to their surfaces, including under non-uniform scale.
+    const glm::mat3 normalMatrix =
+        glm::transpose(glm::inverse(glm::mat3(model)));
 
     // The view matrix converts world-space positions into view space. Moving the
-    // world by -2 on Z places the triangle in front of the conventional OpenGL
+    // world by the negative viewer position places the cube in front of the
     // viewer without introducing a camera class or camera controls.
+    const glm::vec3 viewPosition(0.0f, 0.0f, 3.0f);
     const glm::mat4 view =
-        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+        glm::translate(glm::mat4(1.0f), -viewPosition);
+
+    // This direction points from the surface toward the light. It is not axis-
+    // aligned, so more than one visible face receives diffuse illumination.
+    const glm::vec3 lightDirection =
+        glm::normalize(glm::vec3(0.6f, 1.0f, 0.8f));
+    const glm::vec3 lightColor(1.0f, 0.96f, 0.90f);
+    const glm::vec3 baseColor(0.18f, 0.48f, 0.82f);
+    const float ambientStrength = 0.12f;
+    const float specularStrength = 0.28f;
+    const float shininess = 32.0f;
 
     // These values define the perspective viewing volume. Keeping them named and
     // visible makes it easy to ask: what changes when the field of view narrows,
@@ -292,7 +364,7 @@ int main()
             glm::perspective(fieldOfView, aspectRatio, nearPlane, farPlane);
 
         glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
 
@@ -303,10 +375,19 @@ int main()
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(
             projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix3fv(
+            normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(lightDirection));
+        glUniform3fv(lightColorLocation, 1, glm::value_ptr(lightColor));
+        glUniform3fv(viewPositionLocation, 1, glm::value_ptr(viewPosition));
+        glUniform3fv(baseColorLocation, 1, glm::value_ptr(baseColor));
+        glUniform1f(ambientStrengthLocation, ambientStrength);
+        glUniform1f(specularStrengthLocation, specularStrength);
+        glUniform1f(shininessLocation, shininess);
         glUniform1f(timeLocation, static_cast<float>(glfwGetTime()));
 
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
