@@ -520,6 +520,36 @@ git status
 
 Do not commit the generated `build/` directory.
 
+### Lecture checkpoints and catching up
+
+The `main` branch contains the newest course baseline and will keep changing as
+new lectures introduce new concepts. Older exercises may therefore refer to
+code that is no longer present on the latest `main`.
+
+A Git tag is a named snapshot of the repository at a particular point in the
+course. Each exercise README names the lecture tag containing the code state it
+expects. If you are caught up and your current work is running correctly, stay
+on `main`.
+
+If you need to complete an older lecture, fetch the tags and create a local
+catch-up branch from the relevant snapshot. For Lecture 2, use:
+
+```powershell
+git fetch --tags
+git switch -c catchup-lecture-02 lecture-02
+```
+
+The catch-up branch exists only in your local repository unless you choose to
+push it. It is a safe place to edit and commit the older lecture state; unlike
+checking out a tag directly, it does not leave you in detached HEAD.
+
+When you are ready to return to the newest course version:
+
+```powershell
+git switch main
+git pull
+```
+
 ---
 
 ## Sources and further reading

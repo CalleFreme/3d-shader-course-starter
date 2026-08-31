@@ -1,5 +1,16 @@
 # Lecture 2 — 3D Mathematics & Coordinate Spaces
 
+> **Repository checkpoint:** This exercise was written for the `lecture-02`
+> baseline. If `main` has already moved ahead, create a catch-up branch:
+>
+> ```powershell
+> git fetch --tags
+> git switch -c catchup-lecture-02 lecture-02
+> ```
+>
+> If your current code already matches the exercise and works, you do not need
+> to switch.
+
 ## Purpose and learning goals
 
 The central question today is:

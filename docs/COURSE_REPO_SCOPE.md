@@ -12,6 +12,19 @@ This repository is an educational graphics-programming base, not a game engine.
 5. Examples should map to standard OpenGL/GLSL concepts and public references.
 6. Students should be able to identify what data is on the CPU, what data is on the GPU, and what each shader stage does.
 
+## Lecture checkpoint policy
+
+`main` represents the latest teaching baseline. Before a lecture materially
+changes the shared starter, create an immutable `lecture-XX` tag for the
+starting state expected by that lecture's exercises. Exercise READMEs must name
+the tag they assume.
+
+- Create a checkpoint only after its baseline is known-good.
+- Do not move a tag after it has been published.
+- Students should normally create a local branch from a tag instead of editing
+  in detached HEAD.
+- Create a new lecture tag only when the shared baseline changes materially.
+
 ## Planned progression
 
 The repository may later gain, approximately in this order:

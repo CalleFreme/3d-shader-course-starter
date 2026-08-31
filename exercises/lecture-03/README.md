@@ -1,5 +1,16 @@
 # Lecture 3 — Shader Mathematics & Experimentation
 
+> **Repository checkpoint:** This exercise was written for the `lecture-03`
+> baseline. If `main` has already moved ahead, create a catch-up branch:
+>
+> ```powershell
+> git fetch --tags
+> git switch -c catchup-lecture-03 lecture-03
+> ```
+>
+> If your current code already matches the exercise and works, you do not need
+> to switch.
+
 Friday 28 August 2026, 09:00–12:00
 
 ## Purpose and learning goals

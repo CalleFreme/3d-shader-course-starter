@@ -1,5 +1,16 @@
 # Lecture 1 — First Shader Experiments
 
+> **Repository checkpoint:** This exercise was written for the `lecture-01`
+> baseline. If `main` has already moved ahead, create a catch-up branch:
+>
+> ```powershell
+> git fetch --tags
+> git switch -c catchup-lecture-01 lecture-01
+> ```
+>
+> If your current code already matches the exercise and works, you do not need
+> to switch.
+
 As you work through this course, use learnopengl.com as a reference and structured tutorial.
 The **Shaders** chapter is particularly relevant.
 Read the theory there, and work through some of the examples to reinforce your understanding.
