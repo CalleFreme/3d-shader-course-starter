@@ -2,7 +2,7 @@
 
 Minimal course starter for learning the real-time rasterization pipeline with C++, OpenGL and GLSL.
 
-The project started small and now renders one lit cube using one vertex shader and one fragment shader. It is extended gradually as each course concept becomes relevant.
+The project started small and now renders one lit, textured cube using one vertex shader and one fragment shader. It is extended gradually as each course concept becomes relevant.
 
 The goal is not to hide the graphics pipeline behind a large framework. The goal is to make the important data flow and rendering steps visible and understandable.
 
@@ -19,12 +19,13 @@ The goal is not to hide the graphics pipeline behind a large framework. The goal
 - uploading matrix uniforms from C++ to a vertex shader;
 - passing data from the vertex shader to the fragment shader;
 - transforming and interpolating surface normals and world-space positions;
+- interpolating UV coordinates and sampling a generated 2D texture;
 - calculating simple ambient, Lambert diffuse and Blinn-Phong specular lighting;
 - using depth testing for solid 3D geometry;
 - issuing a draw call;
 - displaying the resulting fragments in the framebuffer.
 
-It deliberately does **not** yet contain camera controls, model loading, textures, multiple light systems, scene graphs, UI, framebuffers or other higher-level systems.
+It deliberately does **not** yet contain camera controls, model loading, image-file loading, multiple light/texture systems, scene graphs, UI, framebuffers or other higher-level systems.
 
 Those concepts will be introduced when they become relevant during the course.
 
@@ -159,8 +160,8 @@ Expected result:
 
 - a window titled **3D and Shader Programming**;
 - a dark background;
-- one static blue cube with several visible faces;
-- ambient and diffuse lighting with a restrained specular highlight.
+- one static cube with a crisp generated checker texture on every face;
+- sampled surface colour modulated by ambient and diffuse lighting, with a restrained specular highlight.
 
 The terminal should also print information similar to:
 
@@ -227,12 +228,13 @@ At this stage it handles things such as:
 
 - creating the window;
 - initializing OpenGL;
-- defining cube position and normal data;
+- defining cube position, normal and UV data;
 - uploading that data to the GPU;
 - configuring vertex attributes;
 - loading/compiling shaders;
 - creating and uploading model, view, projection and normal matrices;
 - uploading explicit light, viewer and material uniforms;
+- creating and binding a small generated 2D texture;
 - issuing the draw call;
 - running the application loop.
 
@@ -246,7 +248,7 @@ The vertex shader.
 
 It receives data for each vertex and produces the final vertex position used by the graphics pipeline.
 
-It also passes world-space position and normal data forward to the fragment shader.
+It also passes world-space position, normal and UV data forward to the fragment shader.
 
 ### `shaders/basic.frag`
 
@@ -316,6 +318,21 @@ The exercises focus on:
 - debugging one intermediate lighting value at a time.
 
 Try to predict the result of each shader change before running it.
+
+## Lecture 5
+
+For the current texturing and applied surface-effects baseline, continue with:
+
+`exercises/lecture-05/README.md`
+
+The exercises focus on:
+
+- UV coordinates and interpolation;
+- texture objects, texture units and sampler uniforms;
+- nearest/linear filtering and repeat/clamp wrapping;
+- sampled colour as a lit material;
+- texture channels as masks and procedural inputs;
+- the distinction between shader alpha and framebuffer blending.
 
 ---
 

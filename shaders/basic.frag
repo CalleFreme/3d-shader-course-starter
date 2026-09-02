@@ -5,6 +5,7 @@
 
 in vec3 worldPosition;
 in vec3 worldNormal;
+in vec2 uv;
 
 // lightDirection points from the surface toward the directional light.
 uniform vec3 lightDirection;
@@ -14,11 +15,15 @@ uniform vec3 baseColor;
 uniform float ambientStrength;
 uniform float specularStrength;
 uniform float shininess;
+uniform sampler2D surfaceTexture;
 
 out vec4 FragColor; // The colour produced for this fragment.
 
 void main()
 {
+    vec4 texel = texture(surfaceTexture, uv);
+    vec3 materialColor = texel.rgb * baseColor;
+
     // Interpolation can change a normal's length, so normalize per fragment.
     vec3 N = normalize(worldNormal);
     vec3 L = normalize(lightDirection);
@@ -35,8 +40,8 @@ void main()
         specular = pow(max(dot(N, H), 0.0), shininess);
     }
 
-    vec3 ambientColor = ambientStrength * baseColor * lightColor;
-    vec3 diffuseColor = diffuse * baseColor * lightColor;
+    vec3 ambientColor = ambientStrength * materialColor * lightColor;
+    vec3 diffuseColor = diffuse * materialColor * lightColor;
     vec3 specularColor = specularStrength * specular * lightColor;
 
     vec3 color = ambientColor + diffuseColor + specularColor;

@@ -3,6 +3,7 @@
 // The vertex shader processes each vertex's local-space attributes.
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aUV;
 
 // These matrices are created in C++ and uploaded to the GPU as uniforms.
 // A uniform keeps the same value for every vertex processed by this draw call.
@@ -13,6 +14,7 @@ uniform mat3 normalMatrix;
 
 out vec3 worldPosition;
 out vec3 worldNormal;
+out vec2 uv;
 
 void main()
 {
@@ -24,4 +26,7 @@ void main()
     // Normal path: local direction -> world direction. Translation must not
     // affect a direction, so normals use a mat3 normal matrix rather than model.
     worldNormal = normalMatrix * aNormal;
+
+    // UVs use their own surface-coordinate domain and pass through unchanged.
+    uv = aUV;
 }

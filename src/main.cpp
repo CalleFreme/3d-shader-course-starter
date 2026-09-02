@@ -11,14 +11,14 @@
 #include <string>
 
 // This is our main file for the OpenGL application.
-// It sets up a window, compiles shaders, and renders a lit cube.
+// It sets up a window, compiles shaders, and renders a lit, textured cube.
 // 
 // What work will be done in this file:
 // 1. Initialize GLFW and create a window.
 // 2. Load OpenGL functions using GLAD.
 // 3. Compile vertex and fragment shaders from external files.
-// 4. Set up vertex data and buffers for a cube.
-// 5. Render the cube in a loop until the window is closed.
+// 4. Set up vertex data, buffers, and a small generated texture.
+// 5. Render the textured cube in a loop until the window is closed.
 // 
 // What work will be done in other files:
 // 1. The shaders will be stored in separate files (basic.vert and basic.frag
@@ -180,56 +180,57 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
 
-    // position.xyz, normal.xyz
+    // position.xyz, normal.xyz, uv.xy
     // Each face has its own vertices so it can have one clear, flat normal.
+    // The duplicated vertices also let every face own a full UV square.
     constexpr float vertices[] = {
         // Front (+Z)
-        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,   0.0f, 1.0f,
 
         // Back (-Z)
-         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 1.0f,
 
         // Left (-X)
-        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
 
         // Right (+X)
-         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
 
         // Top (+Y)
-        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 1.0f,
 
         // Bottom (-Y)
-        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 1.0f
     };
 
     GLuint vao = 0;
@@ -243,7 +244,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    constexpr GLsizei stride = 6 * sizeof(float);
+    constexpr GLsizei stride = 8 * sizeof(float);
 
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(0));
@@ -252,6 +253,10 @@ int main()
     glVertexAttribPointer(
         1, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
 
@@ -272,6 +277,39 @@ int main()
         return 1;
     }
 
+    // Four rows of four RGBA texels, listed from the texture's bottom row up.
+    // The two colours form a checker. Their alternating alpha values are not
+    // used by the known-good opaque shader, but remain available as mask data.
+    constexpr int TextureWidth = 4;
+    constexpr int TextureHeight = 4;
+    constexpr unsigned char texturePixels[] = {
+        230,  70,  50, 255,    40, 180, 220,  64,   230,  70,  50, 255,    40, 180, 220,  64,
+         40, 180, 220,  64,   230,  70,  50, 255,    40, 180, 220,  64,   230,  70,  50, 255,
+        230,  70,  50, 255,    40, 180, 220,  64,   230,  70,  50, 255,    40, 180, 220,  64,
+         40, 180, 220,  64,   230,  70,  50, 255,    40, 180, 220,  64,   230,  70,  50, 255
+    };
+
+    GLuint texture = 0;
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA8,
+        TextureWidth,
+        TextureHeight,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        texturePixels);
+
     // Uniform locations identify the three matrix inputs in the vertex shader.
     // We ask for them once after linking, then use the locations when sending
     // matrix values from the CPU to the GPU before drawing.
@@ -286,6 +324,8 @@ int main()
     const GLint ambientStrengthLocation = glGetUniformLocation(shaderProgram, "ambientStrength");
     const GLint specularStrengthLocation = glGetUniformLocation(shaderProgram, "specularStrength");
     const GLint shininessLocation = glGetUniformLocation(shaderProgram, "shininess");
+    const GLint surfaceTextureLocation =
+        glGetUniformLocation(shaderProgram, "surfaceTexture");
     const GLint timeLocation = glGetUniformLocation(shaderProgram, "time");
 
     if (modelLocation == -1 ||
@@ -327,7 +367,8 @@ int main()
     const glm::vec3 lightDirection =
         glm::normalize(glm::vec3(0.6f, 1.0f, 0.8f));
     const glm::vec3 lightColor(1.0f, 0.96f, 0.90f);
-    const glm::vec3 baseColor(0.18f, 0.48f, 0.82f);
+    // White leaves the generated texture's sampled RGB values untinted.
+    const glm::vec3 baseColor(1.0f);
     const float ambientStrength = 0.12f;
     const float specularStrength = 0.28f;
     const float shininess = 32.0f;
@@ -384,8 +425,11 @@ int main()
         glUniform1f(ambientStrengthLocation, ambientStrength);
         glUniform1f(specularStrengthLocation, specularStrength);
         glUniform1f(shininessLocation, shininess);
+        glUniform1i(surfaceTextureLocation, 0);
         glUniform1f(timeLocation, static_cast<float>(glfwGetTime()));
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -394,6 +438,7 @@ int main()
     }
 
     glDeleteProgram(shaderProgram);
+    glDeleteTextures(1, &texture);
     glDeleteBuffers(1, &vbo);
     glDeleteVertexArrays(1, &vao);
 
