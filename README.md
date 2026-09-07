@@ -2,7 +2,7 @@
 
 Minimal course starter for learning the real-time rasterization pipeline with C++, OpenGL and GLSL.
 
-The project started small and now renders one lit, textured cube using one vertex shader and one fragment shader. It is extended gradually as each course concept becomes relevant.
+The project started small and now renders one lit, textured cube into an off-screen framebuffer, then displays its color texture using a fullscreen quad and screen shaders. It is extended gradually as each course concept becomes relevant.
 
 The goal is not to hide the graphics pipeline behind a large framework. The goal is to make the important data flow and rendering steps visible and understandable.
 
@@ -22,10 +22,12 @@ The goal is not to hide the graphics pipeline behind a large framework. The goal
 - interpolating UV coordinates and sampling a generated 2D texture;
 - calculating simple ambient, Lambert diffuse and Blinn-Phong specular lighting;
 - using depth testing for solid 3D geometry;
+- rendering into a framebuffer with a color texture and depth/stencil renderbuffer;
+- sampling that texture in a second, fullscreen pass, with resize-aware attachments;
 - issuing a draw call;
 - displaying the resulting fragments in the framebuffer.
 
-It deliberately does **not** yet contain camera controls, model loading, image-file loading, multiple light/texture systems, scene graphs, UI, framebuffers or other higher-level systems.
+It deliberately does **not** yet contain camera controls, model loading, image-file loading, multiple light/texture systems, scene graphs, UI or other higher-level systems.
 
 Those concepts will be introduced when they become relevant during the course.
 
@@ -235,7 +237,7 @@ At this stage it handles things such as:
 - creating and uploading model, view, projection and normal matrices;
 - uploading explicit light, viewer and material uniforms;
 - creating and binding a small generated 2D texture;
-- issuing the draw call;
+- issuing the scene and fullscreen-quad draw calls;
 - running the application loop.
 
 You do **not** need to memorize every OpenGL function immediately.
@@ -304,7 +306,7 @@ RGB triangle.
 
 ## Lecture 4
 
-For the current normals, lighting, and materials baseline, continue with:
+For the Lecture 4 normals, lighting, and materials checkpoint, continue with:
 
 `exercises/lecture-04/README.md`
 
@@ -321,7 +323,7 @@ Try to predict the result of each shader change before running it.
 
 ## Lecture 5
 
-For the current texturing and applied surface-effects baseline, continue with:
+For the Lecture 5 texturing and applied surface-effects checkpoint, continue with:
 
 `exercises/lecture-05/README.md`
 
@@ -333,6 +335,20 @@ The exercises focus on:
 - sampled colour as a lit material;
 - texture channels as masks and procedural inputs;
 - the distinction between shader alpha and framebuffer blending.
+
+## Lecture 7
+
+For render targets, screen space, and post-processing, continue with:
+
+[exercises/lecture-07/README.md](exercises/lecture-07/README.md)
+
+Lecture 6 was a project/debugging workshop with no new common baseline.
+Lecture 7 extends the Lecture 5 cube with two passes: the existing `basic`
+shaders render into a color texture, and `shaders/screen.vert` and
+`shaders/screen.frag` display it on a fullscreen quad. The baseline image looks
+approximately unchanged; no visible post-processing is enabled.
+
+Learn the core path, then return to Week 3 project completion.
 
 ---
 

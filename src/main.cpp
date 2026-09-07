@@ -18,13 +18,12 @@
 // 2. Load OpenGL functions using GLAD.
 // 3. Compile vertex and fragment shaders from external files.
 // 4. Set up vertex data, buffers, and a small generated texture.
-// 5. Render the textured cube in a loop until the window is closed.
+// 5. Render the cube into a texture, then draw that texture on a fullscreen quad.
 // 
 // What work will be done in other files:
-// 1. The shaders will be stored in separate files (basic.vert and basic.frag
-//    in the shaders directory).
-// 2. The shaders will be compiled and linked into a shader program.
-// 3. The shader program will be used to render the cube.
+// 1. basic.vert/basic.frag shade the cube; screen.vert/screen.frag display its image.
+// 2. Each vertex/fragment pair is compiled and linked into its own program.
+// 3. The CPU selects the program and framebuffer before each draw.
 // 4. The vertex data will be stored in a vertex buffer object (VBO) and a
 //    vertex array object (VAO).
 // 5. The cube will be rendered using glDrawArrays with the shader program
@@ -91,8 +90,16 @@ GLuint createShaderProgram(const std::string& vertexPath, const std::string& fra
 
     const GLuint vertexShader =
         compileShader(GL_VERTEX_SHADER, vertexSource, vertexPath);
-    const GLuint fragmentShader =
-        compileShader(GL_FRAGMENT_SHADER, fragmentSource, fragmentPath);
+    GLuint fragmentShader = 0;
+    try
+    {
+        fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource, fragmentPath);
+    }
+    catch (...)
+    {
+        glDeleteShader(vertexShader);
+        throw;
+    }
 
     const GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
@@ -120,9 +127,34 @@ GLuint createShaderProgram(const std::string& vertexPath, const std::string& fra
     return program;
 }
 
-void framebufferSizeCallback(GLFWwindow*, int width, int height)
+// Called only for positive dimensions, on first use and whenever the size changes.
+bool resizeSceneFramebuffer(GLuint framebuffer, GLuint colorTexture,
+                            GLuint depthStencil, int width, int height)
 {
-    glViewport(0, 0, width, height);
+    // nullptr allocates image storage without uploading CPU pixels. The GPU
+    // will fill this texture when we clear and draw the scene in pass 1.
+    // Reallocating storage keeps the object names and their attachments intact.
+    glBindTexture(GL_TEXTURE_2D, colorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    // Keep depth storage the same size as colour: both describe the same image.
+    // This packed format reserves 24 bits for depth and 8 for stencil;
+    // only depth testing is used in this baseline.
+    glBindRenderbuffer(GL_RENDERBUFFER, depthStencil);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // Check after storage exists, including after a resize. Completeness means
+    // the attachments form a usable render target, not that the scene is correct.
+    const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cerr << "Scene framebuffer incomplete at " << width << 'x' << height
+                  << ": status 0x" << std::hex << status << std::dec << '\n';
+        return false;
+    }
+    return true;
 }
 
 void processInput(GLFWwindow* window)
@@ -163,7 +195,6 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSwapInterval(1);
 
     const int loadedVersion = gladLoadGL(glfwGetProcAddress);
@@ -177,8 +208,6 @@ int main()
 
     std::cout << "OpenGL: " << glGetString(GL_VERSION) << '\n';
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
-
-    glEnable(GL_DEPTH_TEST);
 
     // position.xyz, normal.xyz, uv.xy
     // Each face has its own vertices so it can have one clear, flat normal.
@@ -261,15 +290,19 @@ int main()
     glBindVertexArray(0);
 
     GLuint shaderProgram = 0;
+    GLuint screenProgram = 0;
 
     try
     {
         shaderProgram =
             createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
+        screenProgram =
+            createShaderProgram("shaders/screen.vert", "shaders/screen.frag");
     }
     catch (const std::exception& exception)
     {
         std::cerr << exception.what() << '\n';
+        glDeleteProgram(shaderProgram);
         glDeleteBuffers(1, &vbo);
         glDeleteVertexArrays(1, &vao);
         glfwDestroyWindow(window);
@@ -309,6 +342,69 @@ int main()
         GL_RGBA,
         GL_UNSIGNED_BYTE,
         texturePixels);
+
+    // Separate geometry for pass 2: position.xy in clip space, then uv.xy.
+    // Two triangles cover the entire viewport. Unlike the cube, this geometry
+    // needs no model/view/projection: screen.vert supplies z = 0 and w = 1.
+    // Bottom-left maps to UV (0, 0), top-right to (1, 1), preserving image orientation.
+    constexpr float screenVertices[] = {
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f,
+        -1.0f,  1.0f,  0.0f, 1.0f
+    };
+    GLuint screenVao = 0;
+    GLuint screenVbo = 0;
+    glGenVertexArrays(1, &screenVao);
+    glGenBuffers(1, &screenVbo);
+    glBindVertexArray(screenVao);
+    glBindBuffer(GL_ARRAY_BUFFER, screenVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screenVertices), screenVertices, GL_STATIC_DRAW);
+    constexpr GLsizei screenStride = 4 * sizeof(float);
+    // This VAO remembers the quad's layout: location 1 is UV here, whereas
+    // location 1 in the cube VAO is a normal. Each matches its own vertex shader.
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, screenStride, nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, screenStride,
+                          reinterpret_cast<void*>(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    // A framebuffer connects attachments; the texture/renderbuffer own the storage.
+    // Pass 1 writes colour into a texture because pass 2 must sample it.
+    // Depth is used only for visibility in pass 1 and is not sampled in pass 2,
+    // so a renderbuffer is sufficient for the depth/stencil attachment.
+    GLuint sceneFramebuffer = 0;
+    GLuint sceneColorTexture = 0;
+    GLuint sceneDepthStencil = 0;
+    glGenFramebuffers(1, &sceneFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, sceneFramebuffer);
+    glGenTextures(1, &sceneColorTexture);
+    glBindTexture(GL_TEXTURE_2D, sceneColorTexture);
+    // Linear filtering can blend neighboring texels. Clamp prevents the opposite
+    // edge from repeating when an exercise offsets UVs outside [0, 1].
+    // GL_LINEAR minification samples level 0 without requiring mipmaps.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // Connect texture level 0 to the scene shader's colour output destination.
+    // Attachment setup references the texture; it does not copy its pixels.
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, sceneColorTexture, 0);
+    glGenRenderbuffers(1, &sceneDepthStencil);
+    glBindRenderbuffer(GL_RENDERBUFFER, sceneDepthStencil);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                              GL_RENDERBUFFER, sceneDepthStencil);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Storage is allocated below using the actual drawable size, with no mipmaps.
+    int sceneWidth = 0;
+    int sceneHeight = 0;
+    int exitCode = 0;
+    const GLint sceneTextureLocation = glGetUniformLocation(screenProgram, "sceneTexture");
 
     // Uniform locations identify the three matrix inputs in the vertex shader.
     // We ask for them once after linking, then use the locations when sending
@@ -394,8 +490,24 @@ int main()
 
         if (framebufferWidth == 0 || framebufferHeight == 0)
         {
-            glfwPollEvents();
+            // Keep the old storage until there is a drawable area again.
+            // Waiting processes events without repeatedly drawing an empty window.
+            glfwWaitEvents();
             continue;
+        }
+
+        // Window resizing does not resize our attachments automatically.
+        // Allocate on first use, then only when the drawable dimensions change.
+        if (framebufferWidth != sceneWidth || framebufferHeight != sceneHeight)
+        {
+            if (!resizeSceneFramebuffer(sceneFramebuffer, sceneColorTexture,
+                                        sceneDepthStencil, framebufferWidth, framebufferHeight))
+            {
+                exitCode = 1;
+                break; // Use the same resource cleanup as normal shutdown.
+            }
+            sceneWidth = framebufferWidth;
+            sceneHeight = framebufferHeight;
         }
 
         const float aspectRatio =
@@ -404,6 +516,14 @@ int main()
         const glm::mat4 projection =
             glm::perspective(fieldOfView, aspectRatio, nearPlane, farPlane);
 
+        // PASS 1: render the scene into the off-screen framebuffer.
+        // Binding selects where clears and fragment outputs go. The viewport
+        // maps clip-space results into that target; binding an FBO does not set it.
+        glBindFramebuffer(GL_FRAMEBUFFER, sceneFramebuffer);
+        glViewport(0, 0, sceneWidth, sceneHeight);
+        glEnable(GL_DEPTH_TEST);
+        // Depth must be enabled again each frame because pass 2 disables it.
+        // Clear last frame's colour and depth before resolving cube visibility.
         glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -428,15 +548,43 @@ int main()
         glUniform1i(surfaceTextureLocation, 0);
         glUniform1f(timeLocation, static_cast<float>(glfwGetTime()));
 
+        // Restore the cube's surface texture: pass 2 used this same unit for
+        // the scene image. The cube must not sample the target it is writing into.
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        // PASS 2: render the scene texture to the default framebuffer.
+        // Framebuffer 0 is the window's default framebuffer. The scene texture
+        // is now an input to this draw, while the window's back buffer is the output.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, framebufferWidth, framebufferHeight);
+        // We are displaying an image across the whole viewport, not resolving
+        // 3D surface visibility. This pass does not need depth testing or a depth clear.
+        glDisable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glUseProgram(screenProgram);
+        // Uniform uploads affect the current program. A sampler stores a unit
+        // index (0), not a texture object name (sceneColorTexture).
+        glUniform1i(sceneTextureLocation, 0); // Sampler stores a texture-unit index.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, sceneColorTexture);
+        glBindVertexArray(screenVao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    // Delete GPU resources while the OpenGL context still exists. Deleting the
+    // framebuffer does not delete its attachments: each object has its own lifetime.
+    glDeleteProgram(screenProgram);
+    glDeleteBuffers(1, &screenVbo);
+    glDeleteVertexArrays(1, &screenVao);
+    glDeleteFramebuffers(1, &sceneFramebuffer);
+    glDeleteTextures(1, &sceneColorTexture);
+    glDeleteRenderbuffers(1, &sceneDepthStencil);
     glDeleteProgram(shaderProgram);
     glDeleteTextures(1, &texture);
     glDeleteBuffers(1, &vbo);
@@ -445,5 +593,5 @@ int main()
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    return 0;
+    return exitCode;
 }
