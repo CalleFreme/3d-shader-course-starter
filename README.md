@@ -350,6 +350,21 @@ approximately unchanged; no visible post-processing is enabled.
 
 Learn the core path, then return to Week 3 project completion.
 
+## Lecture 8
+
+For Rendering Concepts & Graphics Optimization, continue with:
+
+[exercises/lecture-08/README.md](exercises/lecture-08/README.md)
+
+The `lecture-08` checkpoint records the guide and course state; it intentionally
+adds no new common rendering feature. Use your own project for one concept
+explanation, one relevant optimization comparison, and a submission rehearsal.
+This is an evidence guide; Week 3 project completion has priority.
+
+Optional live code demonstrations for this lecture are in
+[examples/lecture-08/README.md](examples/lecture-08/README.md). They are not
+required project work.
+
 ---
 
 ## The first mental model

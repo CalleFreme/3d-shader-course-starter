@@ -6,6 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <fstream>
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -157,11 +159,77 @@ bool resizeSceneFramebuffer(GLuint framebuffer, GLuint colorTexture,
     return true;
 }
 
-void processInput(GLFWwindow* window)
+enum class ScreenMode
+{
+    Normal,
+    Workload,
+    Discard
+};
+
+void processInput(GLFWwindow* window, ScreenMode& mode, int& iterationCount,
+                  int& discardOrder, bool& vsyncEnabled)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+
+    // Edge-triggered keys keep the tiny demonstration controls easy to trace.
+    static int previousOne = GLFW_RELEASE;
+    static int previousTwo = GLFW_RELEASE;
+    static int previousThree = GLFW_RELEASE;
+    static int previousDown = GLFW_RELEASE;
+    static int previousUp = GLFW_RELEASE;
+    static int previousD = GLFW_RELEASE;
+    static int previousV = GLFW_RELEASE;
+    const auto pressed = [](GLFWwindow* currentWindow, int key, int& previous)
+    {
+        const int current = glfwGetKey(currentWindow, key);
+        const bool wasPressed = current == GLFW_PRESS && previous == GLFW_RELEASE;
+        previous = current;
+        return wasPressed;
+    };
+
+    if (pressed(window, GLFW_KEY_1, previousOne))
+    {
+        mode = ScreenMode::Normal;
+        std::cout << "Screen mode: NORMAL\n";
+    }
+    if (pressed(window, GLFW_KEY_2, previousTwo))
+    {
+        mode = ScreenMode::Workload;
+        std::cout << "Screen mode: WORKLOAD DEMO (iterations: " << iterationCount
+                  << ", VSync: " << (vsyncEnabled ? "ON" : "OFF") << ")\n";
+    }
+    if (pressed(window, GLFW_KEY_3, previousThree))
+    {
+        mode = ScreenMode::Discard;
+        std::cout << "Screen mode: DISCARD DEMO (iterations: " << iterationCount
+                  << ", " << (discardOrder == 0 ? "work before discard" : "discard before work")
+                  << ", VSync: " << (vsyncEnabled ? "ON" : "OFF") << ")\n";
+    }
+    // The shared count is used by both demos, so the same amount of repeated
+    // work can be compared before and after changing the discard order.
+    if (pressed(window, GLFW_KEY_DOWN, previousDown))
+    {
+        iterationCount = std::max(1, iterationCount / 2);
+        std::cout << "Workload iterations: " << iterationCount << "\n";
+    }
+    if (pressed(window, GLFW_KEY_UP, previousUp))
+    {
+        iterationCount = std::min(1024, iterationCount * 2);
+        std::cout << "Workload iterations: " << iterationCount << "\n";
+    }
+    if (pressed(window, GLFW_KEY_D, previousD))
+    {
+        discardOrder = 1 - discardOrder;
+        std::cout << "Discard order: " << (discardOrder == 0 ? "work before discard" : "discard before work") << "\n";
+    }
+    if (pressed(window, GLFW_KEY_V, previousV))
+    {
+        vsyncEnabled = !vsyncEnabled;
+        glfwSwapInterval(vsyncEnabled ? 1 : 0);
+        std::cout << "VSync: " << (vsyncEnabled ? "ON" : "OFF") << "\n";
     }
 }
 } // namespace
@@ -291,6 +359,8 @@ int main()
 
     GLuint shaderProgram = 0;
     GLuint screenProgram = 0;
+    GLuint workloadProgram = 0;
+    GLuint discardProgram = 0;
 
     try
     {
@@ -298,11 +368,17 @@ int main()
             createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
         screenProgram =
             createShaderProgram("shaders/screen.vert", "shaders/screen.frag");
+        workloadProgram =
+            createShaderProgram("shaders/screen.vert", "shaders/workload.frag");
+        discardProgram =
+            createShaderProgram("shaders/screen.vert", "shaders/discard_order.frag");
     }
     catch (const std::exception& exception)
     {
         std::cerr << exception.what() << '\n';
         glDeleteProgram(shaderProgram);
+        glDeleteProgram(workloadProgram);
+        glDeleteProgram(discardProgram);
         glDeleteBuffers(1, &vbo);
         glDeleteVertexArrays(1, &vao);
         glfwDestroyWindow(window);
@@ -405,6 +481,21 @@ int main()
     int sceneHeight = 0;
     int exitCode = 0;
     const GLint sceneTextureLocation = glGetUniformLocation(screenProgram, "sceneTexture");
+    const GLint workloadTextureLocation = glGetUniformLocation(workloadProgram, "sceneTexture");
+    const GLint iterationCountLocation = glGetUniformLocation(workloadProgram, "iterationCount");
+    const GLint discardTextureLocation = glGetUniformLocation(discardProgram, "sceneTexture");
+    const GLint discardIterationLocation = glGetUniformLocation(discardProgram, "iterationCount");
+    const GLint discardOrderLocation = glGetUniformLocation(discardProgram, "workBeforeDiscard");
+
+    ScreenMode screenMode = ScreenMode::Normal;
+    int iterationCount = 8;
+    int discardOrder = 0;
+    bool vsyncEnabled = true;
+    std::cout << "Controls: 1 normal | 2 workload | 3 discard | Up/Down workload | D discard order | V VSync | Esc exit\n";
+    std::cout << "VSync: ON | whole-frame timing is approximate, not a direct GPU timer; VSync can mask workload differences. Keep window, camera and scene fixed and change one workload variable.\n";
+    auto previousFrameTime = std::chrono::steady_clock::now();
+    double frameTimeSumMs = 0.0;
+    int measuredFrames = 0;
 
     // Uniform locations identify the three matrix inputs in the vertex shader.
     // We ask for them once after linking, then use the locations when sending
@@ -478,7 +569,7 @@ int main()
 
     while (glfwWindowShouldClose(window) == GLFW_FALSE)
     {
-        processInput(window);
+        processInput(window, screenMode, iterationCount, discardOrder, vsyncEnabled);
 
         // Framebuffer dimensions can differ from window dimensions on high-DPI
         // displays. Reading the current framebuffer size keeps projected shapes
@@ -564,10 +655,31 @@ int main()
         // 3D surface visibility. This pass does not need depth testing or a depth clear.
         glDisable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(screenProgram);
+        GLuint activeScreenProgram = screenProgram;
+        GLint activeTextureLocation = sceneTextureLocation;
+        if (screenMode == ScreenMode::Workload)
+        {
+            activeScreenProgram = workloadProgram;
+            activeTextureLocation = workloadTextureLocation;
+        }
+        else if (screenMode == ScreenMode::Discard)
+        {
+            activeScreenProgram = discardProgram;
+            activeTextureLocation = discardTextureLocation;
+        }
+        glUseProgram(activeScreenProgram);
         // Uniform uploads affect the current program. A sampler stores a unit
         // index (0), not a texture object name (sceneColorTexture).
-        glUniform1i(sceneTextureLocation, 0); // Sampler stores a texture-unit index.
+        glUniform1i(activeTextureLocation, 0); // Sampler stores a texture-unit index.
+        if (screenMode == ScreenMode::Workload)
+        {
+            glUniform1i(iterationCountLocation, iterationCount);
+        }
+        else if (screenMode == ScreenMode::Discard)
+        {
+            glUniform1i(discardIterationLocation, iterationCount);
+            glUniform1i(discardOrderLocation, discardOrder);
+        }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, sceneColorTexture);
         glBindVertexArray(screenVao);
@@ -575,11 +687,26 @@ int main()
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        const auto now = std::chrono::steady_clock::now();
+        frameTimeSumMs +=
+            std::chrono::duration<double, std::milli>(now - previousFrameTime).count();
+        previousFrameTime = now;
+        if (++measuredFrames == 120)
+        {
+            const double averageMs = frameTimeSumMs / measuredFrames;
+            std::cout << "Observed frame time (whole frame, last 120): "
+                      << averageMs << " ms, ~" << (1000.0 / averageMs) << " FPS\n";
+            frameTimeSumMs = 0.0;
+            measuredFrames = 0;
+        }
     }
 
     // Delete GPU resources while the OpenGL context still exists. Deleting the
     // framebuffer does not delete its attachments: each object has its own lifetime.
     glDeleteProgram(screenProgram);
+    glDeleteProgram(workloadProgram);
+    glDeleteProgram(discardProgram);
     glDeleteBuffers(1, &screenVbo);
     glDeleteVertexArrays(1, &screenVao);
     glDeleteFramebuffers(1, &sceneFramebuffer);
